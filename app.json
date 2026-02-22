@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "My App",
-    "slug": "my-app",
+    "name": "StockAI Ultra",
+    "slug": "stockai-ultra",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "stockai",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,10 +15,10 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.myapp"
+      "bundleIdentifier": "com.stockai.ultra"
     },
     "android": {
-      "package": "com.myapp",
+      "package": "com.stockai.ultra",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
