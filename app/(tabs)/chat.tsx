@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { View, Text, FlatList, TextInput, Pressable, StyleSheet, Platform, ActivityIndicator, Keyboard } from 'react-native';
+import { View, Text, FlatList, TextInput, Pressable, StyleSheet, Platform, ActivityIndicator, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { Ionicons } from '@expo/vector-icons';
@@ -89,6 +89,8 @@ export default function ChatScreen() {
     );
   }, [colors, isStreaming]);
 
+  const hasMessages = messages.length > 0;
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={0}>
@@ -97,23 +99,18 @@ export default function ChatScreen() {
             <Ionicons name="sparkles" size={20} color={colors.tint} />
             <Text style={[styles.headerTitle, { color: colors.text }]}>AI Assistant</Text>
           </View>
-          {messages.length > 0 && (
+          {hasMessages && (
             <Pressable onPress={() => { setMessages([]); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} hitSlop={8}>
               <Ionicons name="trash-outline" size={20} color={colors.textTertiary} />
             </Pressable>
           )}
         </View>
 
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          inverted
-          keyExtractor={(item) => item.id}
-          renderItem={renderMessage}
-          contentContainerStyle={{ flexDirection: 'column-reverse', paddingHorizontal: 16, paddingBottom: 8, paddingTop: 8 }}
-          keyboardDismissMode="interactive"
-          keyboardShouldPersistTaps="handled"
-          ListEmptyComponent={
+        {!hasMessages ? (
+          <ScrollView
+            contentContainerStyle={styles.emptyChatScroll}
+            keyboardShouldPersistTaps="handled"
+          >
             <View style={styles.emptyChat}>
               <View style={[styles.emptyChatIcon, { backgroundColor: colors.tint + '15' }]}>
                 <Ionicons name="analytics" size={40} color={colors.tint} />
@@ -129,8 +126,19 @@ export default function ChatScreen() {
                 ))}
               </View>
             </View>
-          }
-        />
+          </ScrollView>
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            inverted
+            keyExtractor={(item) => item.id}
+            renderItem={renderMessage}
+            contentContainerStyle={{ flexDirection: 'column-reverse', paddingHorizontal: 16, paddingBottom: 8, paddingTop: 8 }}
+            keyboardDismissMode="interactive"
+            keyboardShouldPersistTaps="handled"
+          />
+        )}
 
         <View style={[styles.inputBar, { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: Platform.OS === 'web' ? 34 : insets.bottom || 8 }]}>
           <View style={[styles.inputWrap, { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder }]}>
@@ -174,7 +182,8 @@ const styles = StyleSheet.create({
   messageText: { fontSize: 15, fontFamily: 'Inter_400Regular', lineHeight: 22 },
   typingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
   typingText: { fontSize: 13, fontFamily: 'Inter_400Regular' },
-  emptyChat: { alignItems: 'center', paddingTop: 40, paddingHorizontal: 24, transform: [{ scaleY: -1 }] },
+  emptyChatScroll: { flexGrow: 1, justifyContent: 'center' },
+  emptyChat: { alignItems: 'center', paddingHorizontal: 24, paddingBottom: 40 },
   emptyChatIcon: { width: 72, height: 72, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
   emptyChatTitle: { fontSize: 22, fontFamily: 'Inter_700Bold', marginBottom: 6 },
   emptyChatSub: { fontSize: 14, fontFamily: 'Inter_400Regular', textAlign: 'center', lineHeight: 20, marginBottom: 24 },
