@@ -58,8 +58,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const indexContext = indices.map(i => `${i.name}: ${i.value} (${i.change >= 0 ? '+' : ''}${i.changePercent}%)`).join(', ');
 
       res.setHeader("Content-Type", "text/event-stream");
-      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Cache-Control", "no-cache, no-transform");
       res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no");
+      res.flushHeaders();
 
       const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
         {
