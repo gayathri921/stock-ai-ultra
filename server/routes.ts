@@ -1,7 +1,14 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import OpenAI from "openai";
-import { getStockQuote, searchStocks, getTrendingStocks, getTopMovers, getMarketIndices, getAllSymbols } from "./stockData";
+import {
+  getStockQuote,
+  searchStocks,
+  getTrendingStocks,
+  getTopMovers,
+  getMarketIndices,
+  getAllSymbols,
+} from "./stockData.ts";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -9,9 +16,12 @@ const openai = new OpenAI({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+ 
   app.get("/api/stocks/quote/:symbol", (req: Request, res: Response) => {
     const quote = getStockQuote(req.params.symbol);
-    if (!quote) return res.status(404).json({ error: "Stock not found" });
+    if (!quote) {
+      return res.status(404).json({ error: "Stock not found" });
+    }
     res.json(quote);
   });
 
@@ -36,27 +46,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(getAllSymbols());
   });
 
+
+
   app.post("/api/chat", async (req: Request, res: Response) => {
     try {
       const { message, history = [] } = req.body;
-      if (!message) return res.status(400).json({ error: "Message required" });
+      if (!message) {
+        return res.status(400).json({ error: "Message required" });
+      }
 
       const symbols = getAllSymbols();
-      const mentionedStocks = symbols.filter(s =>
+      const mentionedStocks = symbols.filter((s) =>
         message.toUpperCase().includes(s)
       );
+
       let stockContext = "";
       if (mentionedStocks.length > 0) {
-        const quotes = mentionedStocks.map(s => {
-          const q = getStockQuote(s);
-          return q ? `${q.symbol}: $${q.price} (${q.change >= 0 ? '+' : ''}${q.changePercent}%), Volume: ${(q.volume / 1000000).toFixed(1)}M, P/E: ${q.pe}, Market Cap: $${(q.marketCap / 1000000000).toFixed(1)}B` : '';
-        }).filter(Boolean).join('\n');
+        const quotes = mentionedStocks
+          .map((s) => {
+            const q = getStockQuote(s);
+            if (!q) return "";
+            return `${q.symbol}: $${q.price} (${q.change >= 0 ? "+" : ""}${q.changePercent}%), Volume: ${(q.volume / 1_000_000).toFixed(1)}M, P/E: ${q.pe}, Market Cap: $${(q.marketCap / 1_000_000_000).toFixed(1)}B`;
+          })
+          .filter(Boolean)
+          .join("\n");
+
         stockContext = `\n\nCurrent market data:\n${quotes}`;
       }
 
       const indices = getMarketIndices();
-      const indexContext = indices.map(i => `${i.name}: ${i.value} (${i.change >= 0 ? '+' : ''}${i.changePercent}%)`).join(', ');
+      const indexContext = indices
+        .map(
+          (i) =>
+            `${i.name}: ${i.value} (${i.change >= 0 ? "+" : ""}${i.changePercent}%)`
+        )
+        .join(", ");
 
+      // SSE headers
       res.setHeader("Content-Type", "text/event-stream");
       res.setHeader("Cache-Control", "no-cache, no-transform");
       res.setHeader("Connection", "keep-alive");
@@ -66,19 +92,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
         {
           role: "system",
-          content: `You are StockAI, an expert financial analyst and stock market advisor. You provide insightful analysis of stocks, market trends, and investment strategies.
+          content: `You are StockAI, an expert financial analyst.
 
 Current market indices: ${indexContext}${stockContext}
 
-When analyzing stocks, provide:
-1. A brief summary of the stock's current position
-2. A clear BUY, HOLD, or SELL recommendation
-3. A confidence percentage (e.g., 75%)
-4. Risk level (Low, Medium, High)
-5. Simple explanation of your reasoning
-6. Always include a disclaimer that this is AI-generated analysis, not financial advice
-
-Keep responses concise and well-structured. Use bullet points for clarity. Be specific with data points.`
+Provide BUY/HOLD/SELL, confidence %, risk level, reasoning, and disclaimer.`,
         },
         ...history.map((h: { role: string; content: string }) => ({
           role: h.role as "user" | "assistant",
