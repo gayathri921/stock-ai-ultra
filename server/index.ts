@@ -1,6 +1,6 @@
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes.ts";
+import { registerRoutes } from "./routes.js";
 import * as fs from "fs";
 import * as path from "path";
 
